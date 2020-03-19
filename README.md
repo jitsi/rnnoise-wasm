@@ -4,6 +4,10 @@
 
 This repository contains the necessary utilities to build the library using a Docker build environment with Emscripten.
 
+## Pretrained [models](./models)
+
+From [rnnoise-nu](https://github.com/GregorR/rnnoise-nu/tree/master/src/models)
+
 ## Build
 
 ### Prerequisites

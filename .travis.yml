@@ -1,0 +1,16 @@
+language: node_js
+
+node_js:
+  - 10
+  - 12
+
+services:
+  - docker
+
+script: 
+  - yarn build
+  - yarn build:model:bd
+  - yarn build:model:cb
+  - yarn build:model:lq
+  - yarn build:model:mp
+  - yarn build:model:sh

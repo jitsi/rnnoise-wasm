@@ -10,7 +10,12 @@
     "scripts": {
         "build:dockerimage": "docker image inspect -f '.' emscripten-autotools || docker build -t emscripten-autotools .",
         "build:emscripten": "docker run --rm -v $(pwd):/src emscripten-autotools bash -x ./build.sh",
-        "build": "npm run build:dockerimage && npm run build:emscripten"
+        "build": "npm run build:dockerimage && npm run build:emscripten",
+        "build:model:bd":"cp -rf ./models/bd.c ./rnnoise/src/rnn_data.c && npm run build:dockerimage && npm run build:emscripten",
+        "build:model:cb":"cp -rf ./models/cb.c ./rnnoise/src/rnn_data.c && npm run build:dockerimage && npm run build:emscripten",
+        "build:model:lq":"cp -rf ./models/lq.c ./rnnoise/src/rnn_data.c && npm run build:dockerimage && npm run build:emscripten",
+        "build:model:mp":"cp -rf ./models/mp.c ./rnnoise/src/rnn_data.c && npm run build:dockerimage && npm run build:emscripten",
+        "build:model:sh":"cp -rf ./models/sh.c ./rnnoise/src/rnn_data.c && npm run build:dockerimage && npm run build:emscripten"
     },
     "dependencies": {},
     "devDependencies": {},
