@@ -9,6 +9,12 @@ export CXXFLAGS=${OPTIMIZE}
 
 ENTRY_POINT="rnnoise.js"
 
+if [[ `uname` == "Darwin"  ]]; then
+  SO_SUFFIX="dylib"
+else
+  SO_SUFFIX="so"
+fi
+
 echo "============================================="
 echo "Compiling wasm bindings"
 echo "============================================="
@@ -34,7 +40,7 @@ echo "============================================="
     -s MODULARIZE=1 \
     -s EXPORT_ES6=1 \
     -s EXPORTED_FUNCTIONS="['_rnnoise_process_frame', '_rnnoise_init', '_rnnoise_destroy', '_rnnoise_create', '_malloc', '_free']" \
-    .libs/librnnoise.so \
+    .libs/librnnoise.${SO_SUFFIX} \
     -o ./$ENTRY_POINT
 
   # Create output folder
