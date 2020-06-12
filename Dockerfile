@@ -1,7 +1,5 @@
-FROM trzeci/emscripten:sdk-tag-1.38.30-64bit
+FROM trzeci/emscripten:1.39.17-upstream
 
 RUN apt-get update && \
-    apt-get install -y libtool && \
-    apt-get install -y autotools-dev && \
-    apt-get install -y autoconf && \
-    apt-get install -y automake
+    apt-get install -y libtool autotools-dev autoconf automake
+
