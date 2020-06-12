@@ -4,7 +4,7 @@
     "version": "0.0.1",
     "repository": {
       "type": "git",
-      "url": "git+https://github.com/andrei-gavrilescu/rnnoise-wasm.git"
+      "url": "git+https://github.com/jitsi/rnnoise-wasm.git"
     },
     "main": "./dist/",
     "scripts": {
