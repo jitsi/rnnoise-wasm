@@ -8,6 +8,10 @@ export CFLAGS=${OPTIMIZE}
 export CXXFLAGS=${OPTIMIZE}
 
 ENTRY_POINT="rnnoise.js"
+ENTRY_POINT_SYNC="rnnoise-sync.js"
+MODULE_CREATE_NAME="createRNNWasmModule"
+MODULE_CREATE_NAME_SYNC="createRNNWasmModuleSync"
+
 
 if [[ `uname` == "Darwin"  ]]; then
   SO_SUFFIX="dylib"
@@ -34,6 +38,7 @@ echo "============================================="
   # Compile librnnoise generated LLVM bytecode to wasm
   emcc \
     ${OPTIMIZE} \
+    -g2 \
     -s STRICT=1 \
     -s ALLOW_MEMORY_GROWTH=1 \
     -s MALLOC=emmalloc \
@@ -41,16 +46,35 @@ echo "============================================="
     -s ENVIRONMENT="web,worker" \
     -s EXPORT_ES6=1 \
     -s USE_ES6_IMPORT_META=0 \
+    -s EXPORT_NAME=$MODULE_CREATE_NAME \
     -s EXPORTED_FUNCTIONS="['_rnnoise_process_frame', '_rnnoise_init', '_rnnoise_destroy', '_rnnoise_create', '_malloc', '_free']" \
     .libs/librnnoise.${SO_SUFFIX} \
     -o ./$ENTRY_POINT
+
+    # Compile librnnoise generated LLVM bytecode to wasm
+  emcc \
+    ${OPTIMIZE} \
+    -g2 \
+    -s ALLOW_MEMORY_GROWTH=1 \
+    -s MALLOC=emmalloc \
+    -s MODULARIZE=1 \
+    -s ENVIRONMENT="web,worker" \
+    -s EXPORT_ES6=1 \
+    -s USE_ES6_IMPORT_META=1 \
+    -s WASM_ASYNC_COMPILATION=0 \
+    -s SINGLE_FILE=1 \
+    -s EXPORT_NAME=${MODULE_CREATE_NAME_SYNC} \
+    -s EXPORTED_FUNCTIONS="['_rnnoise_process_frame', '_rnnoise_init', '_rnnoise_destroy', '_rnnoise_create', '_malloc', '_free']" \
+    .libs/librnnoise.${SO_SUFFIX} \
+    -o ./$ENTRY_POINT_SYNC
 
   # Create output folder
   rm -rf ../dist
   mkdir -p ../dist
 
   # Move artifacts
-  mv $ENTRY_POINT ../dist/index.js
+  mv $ENTRY_POINT ../dist/
+  mv $ENTRY_POINT_SYNC ../dist/
   mv rnnoise.wasm ../dist/
 
   # Clean cluttter
