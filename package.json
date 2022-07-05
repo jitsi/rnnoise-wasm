@@ -1,7 +1,7 @@
 {
-    "name": "rnnoise-wasm",
+    "name": "@jitsi/rnnoise-wasm",
     "description": "Rnnoise sub-module compiled with emscripten as web assembly module",
-    "version": "0.0.1",
+    "version": "1.0.0",
     "repository": {
       "type": "git",
       "url": "git+https://github.com/jitsi/rnnoise-wasm.git"
