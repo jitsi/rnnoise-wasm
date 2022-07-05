@@ -11,6 +11,7 @@ ENTRY_POINT="rnnoise.js"
 ENTRY_POINT_SYNC="rnnoise-sync.js"
 MODULE_CREATE_NAME="createRNNWasmModule"
 MODULE_CREATE_NAME_SYNC="createRNNWasmModuleSync"
+RNN_EXPORTED_FUNCTIONS="['_rnnoise_process_frame', '_rnnoise_init', '_rnnoise_destroy', '_rnnoise_create', '_malloc', '_free']"
 
 
 if [[ `uname` == "Darwin"  ]]; then
@@ -35,7 +36,7 @@ echo "============================================="
   emmake make clean
   emmake make V=1
 
-  # Compile librnnoise generated LLVM bytecode to wasm
+  # Compile librnnoise generated LLVM bytecode to wasm with an async loading module.
   emcc \
     ${OPTIMIZE} \
     -g2 \
@@ -46,12 +47,12 @@ echo "============================================="
     -s ENVIRONMENT="web,worker" \
     -s EXPORT_ES6=1 \
     -s USE_ES6_IMPORT_META=0 \
-    -s EXPORT_NAME=$MODULE_CREATE_NAME \
-    -s EXPORTED_FUNCTIONS="['_rnnoise_process_frame', '_rnnoise_init', '_rnnoise_destroy', '_rnnoise_create', '_malloc', '_free']" \
+    -s EXPORT_NAME=${MODULE_CREATE_NAME} \
+    -s EXPORTED_FUNCTIONS="${RNN_EXPORTED_FUNCTIONS}" \
     .libs/librnnoise.${SO_SUFFIX} \
     -o ./$ENTRY_POINT
 
-    # Compile librnnoise generated LLVM bytecode to wasm
+  # Compile librnnoise generated LLVM bytecode to wasm with a sync loading module and inline wasm bytecode.
   emcc \
     ${OPTIMIZE} \
     -g2 \
@@ -64,7 +65,7 @@ echo "============================================="
     -s WASM_ASYNC_COMPILATION=0 \
     -s SINGLE_FILE=1 \
     -s EXPORT_NAME=${MODULE_CREATE_NAME_SYNC} \
-    -s EXPORTED_FUNCTIONS="['_rnnoise_process_frame', '_rnnoise_init', '_rnnoise_destroy', '_rnnoise_create', '_malloc', '_free']" \
+    -s EXPORTED_FUNCTIONS="${RNN_EXPORTED_FUNCTIONS}" \
     .libs/librnnoise.${SO_SUFFIX} \
     -o ./$ENTRY_POINT_SYNC
 
