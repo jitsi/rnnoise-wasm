@@ -1,12 +1,12 @@
 {
-    "name": "rnnoise-wasm",
+    "name": "@jitsi/rnnoise-wasm",
     "description": "Rnnoise sub-module compiled with emscripten as web assembly module",
-    "version": "0.0.1",
+    "version": "0.1.0",
     "repository": {
       "type": "git",
       "url": "git+https://github.com/jitsi/rnnoise-wasm.git"
     },
-    "main": "./dist/",
+    "main": "index.js",
     "scripts": {
         "build:dockerimage": "docker image inspect -f '.' emscripten-autotools || docker build -t emscripten-autotools .",
         "build:emscripten": "docker run --rm -v $(pwd):/src emscripten-autotools bash -x ./build.sh",
