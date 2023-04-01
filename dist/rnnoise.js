@@ -3,10 +3,7 @@ var createRNNWasmModule = (() => {
   var _scriptDir = typeof document !== 'undefined' && document.currentScript ? document.currentScript.src : undefined;
   
   return (
-function(createRNNWasmModule) {
-  createRNNWasmModule = createRNNWasmModule || {};
-
-null;
+function(createRNNWasmModule = {})  {
 
 var Module = typeof createRNNWasmModule != "undefined" ? createRNNWasmModule : {};
 
@@ -122,21 +119,19 @@ var ABORT = false;
 
 var EXITSTATUS;
 
-var buffer, HEAP8, HEAPU8, HEAP16, HEAPU16, HEAP32, HEAPU32, HEAPF32, HEAPF64;
+var HEAP8, HEAPU8, HEAP16, HEAPU16, HEAP32, HEAPU32, HEAPF32, HEAPF64;
 
-function updateGlobalBufferAndViews(buf) {
- buffer = buf;
- Module["HEAP8"] = HEAP8 = new Int8Array(buf);
- Module["HEAP16"] = HEAP16 = new Int16Array(buf);
- Module["HEAP32"] = HEAP32 = new Int32Array(buf);
- Module["HEAPU8"] = HEAPU8 = new Uint8Array(buf);
- Module["HEAPU16"] = HEAPU16 = new Uint16Array(buf);
- Module["HEAPU32"] = HEAPU32 = new Uint32Array(buf);
- Module["HEAPF32"] = HEAPF32 = new Float32Array(buf);
- Module["HEAPF64"] = HEAPF64 = new Float64Array(buf);
+function updateMemoryViews() {
+ var b = wasmMemory.buffer;
+ Module["HEAP8"] = HEAP8 = new Int8Array(b);
+ Module["HEAP16"] = HEAP16 = new Int16Array(b);
+ Module["HEAP32"] = HEAP32 = new Int32Array(b);
+ Module["HEAPU8"] = HEAPU8 = new Uint8Array(b);
+ Module["HEAPU16"] = HEAPU16 = new Uint16Array(b);
+ Module["HEAPU32"] = HEAPU32 = new Uint32Array(b);
+ Module["HEAPF32"] = HEAPF32 = new Float32Array(b);
+ Module["HEAPF64"] = HEAPF64 = new Float64Array(b);
 }
-
-var INITIAL_MEMORY = Module["INITIAL_MEMORY"] || 16777216;
 
 var wasmTable;
 
@@ -217,10 +212,8 @@ function removeRunDependency(id) {
 }
 
 function abort(what) {
- {
-  if (Module["onAbort"]) {
-   Module["onAbort"](what);
-  }
+ if (Module["onAbort"]) {
+  Module["onAbort"](what);
  }
  what = "Aborted(" + what + ")";
  err(what);
@@ -253,112 +246,95 @@ function getBinary(file) {
   }
   if (readBinary) {
    return readBinary(file);
-  } else {
-   throw "both async and sync fetching of the wasm failed";
   }
+  throw "both async and sync fetching of the wasm failed";
  } catch (err) {
   abort(err);
  }
 }
 
-function getBinaryPromise() {
+function getBinaryPromise(binaryFile) {
  if (!wasmBinary && (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER)) {
   if (typeof fetch == "function") {
-   return fetch(wasmBinaryFile, {
+   return fetch(binaryFile, {
     credentials: "same-origin"
    }).then(function(response) {
     if (!response["ok"]) {
-     throw "failed to load wasm binary file at '" + wasmBinaryFile + "'";
+     throw "failed to load wasm binary file at '" + binaryFile + "'";
     }
     return response["arrayBuffer"]();
    }).catch(function() {
-    return getBinary(wasmBinaryFile);
+    return getBinary(binaryFile);
    });
   }
  }
  return Promise.resolve().then(function() {
-  return getBinary(wasmBinaryFile);
+  return getBinary(binaryFile);
  });
+}
+
+function instantiateArrayBuffer(binaryFile, imports, receiver) {
+ return getBinaryPromise(binaryFile).then(function(binary) {
+  return WebAssembly.instantiate(binary, imports);
+ }).then(function(instance) {
+  return instance;
+ }).then(receiver, function(reason) {
+  err("failed to asynchronously prepare wasm: " + reason);
+  abort(reason);
+ });
+}
+
+function instantiateAsync(binary, binaryFile, imports, callback) {
+ if (!binary && typeof WebAssembly.instantiateStreaming == "function" && !isDataURI(binaryFile) && typeof fetch == "function") {
+  return fetch(binaryFile, {
+   credentials: "same-origin"
+  }).then(function(response) {
+   var result = WebAssembly.instantiateStreaming(response, imports);
+   return result.then(callback, function(reason) {
+    err("wasm streaming compile failed: " + reason);
+    err("falling back to ArrayBuffer instantiation");
+    return instantiateArrayBuffer(binaryFile, imports, callback);
+   });
+  });
+ } else {
+  return instantiateArrayBuffer(binaryFile, imports, callback);
+ }
 }
 
 function createWasm() {
  var info = {
-  "a": asmLibraryArg
+  "a": wasmImports
  };
  function receiveInstance(instance, module) {
   var exports = instance.exports;
   Module["asm"] = exports;
   wasmMemory = Module["asm"]["c"];
-  updateGlobalBufferAndViews(wasmMemory.buffer);
+  updateMemoryViews();
   wasmTable = Module["asm"]["k"];
   addOnInit(Module["asm"]["d"]);
   removeRunDependency("wasm-instantiate");
+  return exports;
  }
  addRunDependency("wasm-instantiate");
  function receiveInstantiationResult(result) {
   receiveInstance(result["instance"]);
  }
- function instantiateArrayBuffer(receiver) {
-  return getBinaryPromise().then(function(binary) {
-   return WebAssembly.instantiate(binary, info);
-  }).then(function(instance) {
-   return instance;
-  }).then(receiver, function(reason) {
-   err("failed to asynchronously prepare wasm: " + reason);
-   abort(reason);
-  });
- }
- function instantiateAsync() {
-  if (!wasmBinary && typeof WebAssembly.instantiateStreaming == "function" && !isDataURI(wasmBinaryFile) && typeof fetch == "function") {
-   return fetch(wasmBinaryFile, {
-    credentials: "same-origin"
-   }).then(function(response) {
-    var result = WebAssembly.instantiateStreaming(response, info);
-    return result.then(receiveInstantiationResult, function(reason) {
-     err("wasm streaming compile failed: " + reason);
-     err("falling back to ArrayBuffer instantiation");
-     return instantiateArrayBuffer(receiveInstantiationResult);
-    });
-   });
-  } else {
-   return instantiateArrayBuffer(receiveInstantiationResult);
-  }
- }
  if (Module["instantiateWasm"]) {
   try {
-   var exports = Module["instantiateWasm"](info, receiveInstance);
-   return exports;
+   return Module["instantiateWasm"](info, receiveInstance);
   } catch (e) {
    err("Module.instantiateWasm callback failed with error: " + e);
-   return false;
+   readyPromiseReject(e);
   }
  }
- instantiateAsync().catch(readyPromiseReject);
+ instantiateAsync(wasmBinary, wasmBinaryFile, info, receiveInstantiationResult).catch(readyPromiseReject);
  return {};
 }
 
 function callRuntimeCallbacks(callbacks) {
  while (callbacks.length > 0) {
-  var callback = callbacks.shift();
-  if (typeof callback == "function") {
-   callback(Module);
-   continue;
-  }
-  var func = callback.func;
-  if (typeof func == "number") {
-   if (callback.arg === undefined) {
-    getWasmTableEntry(func)();
-   } else {
-    getWasmTableEntry(func)(callback.arg);
-   }
-  } else {
-   func(callback.arg === undefined ? null : callback.arg);
-  }
+  callbacks.shift()(Module);
  }
-}
-
-function getWasmTableEntry(funcPtr) {
- return wasmTable.get(funcPtr);
 }
 
 function _emscripten_memcpy_big(dest, src, num) {
@@ -370,9 +346,10 @@ function getHeapMax() {
 }
 
 function emscripten_realloc_buffer(size) {
+ var b = wasmMemory.buffer;
  try {
-  wasmMemory.grow(size - buffer.byteLength + 65535 >>> 16);
-  updateGlobalBufferAndViews(wasmMemory.buffer);
+  wasmMemory.grow(size - b.byteLength + 65535 >>> 16);
+  updateMemoryViews();
   return 1;
  } catch (e) {}
 }
@@ -397,15 +374,15 @@ function _emscripten_resize_heap(requestedSize) {
  return false;
 }
 
-var asmLibraryArg = {
+var wasmImports = {
  "b": _emscripten_memcpy_big,
  "a": _emscripten_resize_heap
 };
 
 var asm = createWasm();
 
-var ___wasm_call_ctors = Module["___wasm_call_ctors"] = function() {
- return (___wasm_call_ctors = Module["___wasm_call_ctors"] = Module["asm"]["d"]).apply(null, arguments);
+var ___wasm_call_ctors = function() {
+ return (___wasm_call_ctors = Module["asm"]["d"]).apply(null, arguments);
 };
 
 var _rnnoise_init = Module["_rnnoise_init"] = function() {
@@ -432,6 +409,10 @@ var _rnnoise_process_frame = Module["_rnnoise_process_frame"] = function() {
  return (_rnnoise_process_frame = Module["_rnnoise_process_frame"] = Module["asm"]["j"]).apply(null, arguments);
 };
 
+var ___errno_location = function() {
+ return (___errno_location = Module["asm"]["__errno_location"]).apply(null, arguments);
+};
+
 var calledRun;
 
 dependenciesFulfilled = function runCaller() {
@@ -439,8 +420,7 @@ dependenciesFulfilled = function runCaller() {
  if (!calledRun) dependenciesFulfilled = runCaller;
 };
 
-function run(args) {
- args = args || arguments_;
+function run() {
  if (runDependencies > 0) {
   return;
  }
@@ -471,8 +451,6 @@ function run(args) {
  }
 }
 
-Module["run"] = run;
-
 if (Module["preInit"]) {
  if (typeof Module["preInit"] == "function") Module["preInit"] = [ Module["preInit"] ];
  while (Module["preInit"].length > 0) {
@@ -485,6 +463,7 @@ run();
 
   return createRNNWasmModule.ready
 }
+
 );
 })();
 export default createRNNWasmModule;
