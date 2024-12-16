@@ -25,7 +25,7 @@ echo "Compiling wasm bindings"
 echo "============================================="
 (
   cd rnnoise
-
+  git config --global --add safe.directory /src/rnnoise
   # Clean possible autotools clutter that might affect the configurations step
   git clean -f -d
   ./autogen.sh
@@ -34,7 +34,7 @@ echo "============================================="
   # so we need to explicitly pass it to configure.
   emconfigure ./configure CFLAGS=${OPTIMIZE} --enable-static=no --disable-examples --disable-doc
   emmake make clean
-  emmake make V=1
+  emmake make V=1 LDFLAGS='-s INITIAL_MEMORY=32MB -s MAXIMUM_MEMORY=64MB'
 
   # Compile librnnoise generated LLVM bytecode to wasm with an async loading module.
   emcc \
