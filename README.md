@@ -28,8 +28,9 @@ In summary the build process consists of two steps:
 2. `build:emscripten` - mounts the repo to the docker image from step one and runs build.sh on it. The bash script contains all the steps necessary for building rnnoise as a wasm module.
 
 ## Usage
-
-Following a build two files are generated under **dist**, the actual webassembly binary `rnnoise.wasm` and the generated emscriten .js file named `index.js` which contains glue code and the necessary libc runtime javascript bindings.
+Currently the prebuilt files `rnnoise.wasm` along with the `index.js` are genererated using the old rnnoise release 0.1 while the sync version is generated using 0.2. This is done to keep compatibility with usage in jitsi meet, namely the old async version is used for noise detection while the new sync model is used for actual noise suppression within the context of an `AudioWorklet`. This will change in the future when jitsi meet noise detection will have updated heuristics using the new model.
+However, following a build all files in the dist files will be replaced with versions using the new model (both sync and async). 
+Files replaced include the actual webassembly binary `rnnoise.wasm` and the generated emscriten.js file named `rnnoise.js` which contains glue code and the necessary libc runtime javascript bindings, as well as the `rnnoise-sync.js` file which is the sync loading version that has the binary wasm module inlined as a base64 string, this is useful for contexts that only allow synchronous loading of resources, like an `AudioWorklet`.
 
 The repo is structured so it can be used as a npm dependency, with the entry point in dist/index.js, be mindful as using index.js
 automatically implies that rnnoise.wasm needs to be present as well, thus for a normal npm build system one must explicitly copy rnnoise.wasm to the project structure.
