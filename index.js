@@ -1,2 +1,7 @@
-export createRNNWasmModule from "./dist/rnnoise";
-export createRNNWasmModuleSync from "./dist/rnnoise-sync"
+import createRNNWasmModule from "./dist/rnnoise";
+import createRNNWasmModuleSync from "./dist/rnnoise-sync"
+
+export {
+    createRNNWasmModule,
+    createRNNWasmModuleSync
+};
